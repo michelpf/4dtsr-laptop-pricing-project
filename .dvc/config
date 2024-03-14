@@ -1,0 +1,4 @@
+[core]
+    remote = remote_aws
+['remote "remote_aws"']
+    url = s3://4dtsr-dvc
