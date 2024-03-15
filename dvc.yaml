@@ -1,0 +1,44 @@
+stages:
+  obter_dados:
+    cmd: python -m src.data.get_data fiap-ds-mlops dataset/laptopPrice.csv data/raw/laptopPrice.csv
+    deps:
+    - src/data/get_data.py
+    outs:
+    - data/raw/laptopPrice.csv
+
+  processar_dados:
+    cmd: python -m src.data.make_dataset data/raw/laptopPrice.csv data/processed/laptop-price.csv
+    deps:
+    - src/data/make_dataset.py
+    - data/raw/laptopPrice.csv
+    outs:
+    - data/processed/laptop-price.csv
+
+  processar_features:
+    cmd: python -m src.data.make_features data/processed/laptop-price.csv data/processed/laptop-price-features.csv
+    deps:
+    - src/data/make_features.py
+    - data/processed/laptop-price.csv
+    outs:
+    - data/processed/laptop-price-features.csv
+
+  treinamento:
+    cmd: python -m src.models.train_model data/processed/laptop-price-features.csv
+      models/model.pkl
+    deps:
+    - src/models/train_model.py
+    - data/processed/laptop-price-features.csv
+    outs:
+    - models/model.pkl
+metrics:
+- dvclive/metrics.json
+plots:
+- dvclive/plots/metrics:
+    x: step
+artifacts:
+  laptop-pricing:
+    path: models/model.pkl
+    type: model
+    desc: Modelo para predição de preço de laptop.
+    labels:
+    - regressão
