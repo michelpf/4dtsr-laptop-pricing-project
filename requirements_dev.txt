@@ -12,3 +12,4 @@ boto3 == 1.33.12
 xgboost == 2.0.3
 pytest == 7.4.4
 ipykernel == 6.29.3
+dvclive == 3.5.1

@@ -10,6 +10,11 @@ from sklearn.linear_model import Ridge
 import joblib
 import matplotlib.pyplot as plt
 
+from dvclive import Live
+
+from sklearn.linear_model import LinearRegression
+
+
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))
 @click.argument('output_filepath', type=click.Path())
@@ -17,49 +22,56 @@ def main(input_filepath, output_filepath):
     """ Runs data processing scripts to turn raw data from (../raw) into
         cleaned data ready to be analyzed (saved in ../processed).
     """
-    logger = logging.getLogger(__name__)
-    logger.info('Iniciando treinamento de modelo.')
 
-    df_transformed = pd.read_csv(input_filepath)
+    with Live() as live:
+        logger = logging.getLogger(__name__)
+        logger.info('Iniciando treinamento de modelo.')
 
-    features = list(df_transformed.columns)
-    features.remove("price")
+        df_transformed = pd.read_csv(input_filepath)
 
-    X = df_transformed[features]
-    y = df_transformed["price"]
+        features = list(df_transformed.columns)
+        features.remove("price")
 
-    logger.info('Número de atributos: ' + str(len(features)))
-    logger.info('Atributos utilizados: ' + str(features))
+        X = df_transformed[features]
+        y = df_transformed["price"]
 
-    logger.info('Divisão de dados de treinamento e teste.')
+        logger.info('Número de atributos: ' + str(len(features)))
+        logger.info('Atributos utilizados: ' + str(features))
 
-    X_train, X_test, y_train, y_test = train_test_split(X.values, y.values, test_size=0.3, random_state=42)
+        logger.info('Divisão de dados de treinamento e teste.')
 
-    model = Ridge()
+        X_train, X_test, y_train, y_test = train_test_split(X.values, y.values, test_size=0.3, random_state=42)
 
-    logger.info('Treinamento do modelo (Ridge)')
+        model = LinearRegression()
 
-    model.fit(X_train, y_train)
+        logger.info('Treinamento do modelo (Ridge)')
 
-    predictions = model.predict(X_test)
+        model.fit(X_train, y_train)
 
-    mse = mean_squared_error(y_test, predictions)
-    mae = mean_absolute_error(y_test, predictions)
-    r2 = r2_score(y_test, predictions)
+        predictions = model.predict(X_test)
 
-    logger.info('Mean Squared Error: ' + str(mse))
-    logger.info('Mean Absolute Error: ' + str(mae))
-    logger.info('R2: ' + str(r2))
+        mse = mean_squared_error(y_test, predictions)
+        mae = mean_absolute_error(y_test, predictions)
+        r2 = r2_score(y_test, predictions)
 
+        logger.info('Mean Squared Error: ' + str(mse))
+        logger.info('Mean Absolute Error: ' + str(mae))
+        logger.info('R2: ' + str(r2))
 
-    logger.info('Saving figure of results.')
-    plt.scatter(y_test, predictions)
-    plt.xlabel('True Values')
-    plt.ylabel('Predictions')
-    plt.title('Scatter Plot of True vs Predicted Values')
-    plt.savefig("./reports/figures/true_vs_predicted.png",dpi=80)
+        live.log_metric("mse", mse, timestamp=True, plot=True)
+        live.log_metric("mae", mae, timestamp=True, plot=True)
+        live.log_metric("r2", r2, timestamp=True, plot=True)
 
-    joblib.dump(model, output_filepath)
+        logger.info('Saving figure of results.')
+        plt.scatter(y_test, predictions)
+        plt.xlabel('True Values')
+        plt.ylabel('Predictions')
+        plt.title('Scatter Plot of True vs Predicted Values')
+        plt.savefig("./reports/figures/true_vs_predicted.png",dpi=80)
+
+        joblib.dump(model, output_filepath)
+
+        live.log_artifact(output_filepath, type="model", name="laptop-pricing", desc="Modelo para predição de preço de laptop.", labels=["regressão"])
 
 
 if __name__ == '__main__':
